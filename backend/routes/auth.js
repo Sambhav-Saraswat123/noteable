@@ -10,7 +10,7 @@ router.post(
     body(
       "password",
       "Please enter a password with at least 8 characters"
-    ).isLength({ min: 8 }),
+    ).isLength({ min: 7 }),
     body("name", "Enter a name with at least 3 characters").isLength({
       min: 3,
     }),
@@ -21,9 +21,23 @@ router.post(
       console.log(errors);
       return res.status(400).json({ errors: errors.array() });
     }
-    const user = User(req.body);
-    user.save();
-    res.send("Success");
+    const createUser = async () => {
+      try {
+        const user = await User.create({
+          name: req.body.name,
+          email: req.body.email,
+          password: req.body.password,
+        });
+        res.send(user);
+        user.save;
+      } catch (err) {
+        res.json({
+          message: "This email is already registered with an account",
+          email: err.keyValue.email,
+        });
+      }
+    };
+    createUser();
   }
 );
 module.exports = router;
