@@ -1,10 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const User = require("../models/User");
 const router = express.Router();
 const { body, validationResult } = require("express-validator");
+const bcrypt = require("bcryptjs");
+const JWT = require("jsonwebtoken");
+const JWT_SIGN = process.env.sign;
 
 router.post(
-  "/",
+  "/signup",
   [
     body("email", "Enter a valid email").isEmail(),
     body(
@@ -23,18 +27,28 @@ router.post(
     }
     const createUser = async () => {
       try {
-        const user = await User.create({
+        let user = await User.findOne({ email: req.body.email });
+        if (user) {
+          res.status(400).json({
+            error: "Sorry the email is used with another account",
+            email: req.body.email,
+          });
+        }
+        const salt = await bcrypt.genSalt(15);
+        const password = await bcrypt.hash(req.body.password, salt);
+        user = await User.create({
           name: req.body.name,
           email: req.body.email,
-          password: req.body.password,
+          password: password,
         });
-        res.send(user);
         user.save;
+        const data = {
+          id: user.id,
+        };
+        const authToken = JWT.sign(data, JWT_SIGN);
+        res.json({ authToken });
       } catch (err) {
-        res.json({
-          message: "This email is already registered with an account",
-          email: err.keyValue.email,
-        });
+        res.status(500).send("An error from our side occurred");
       }
     };
     createUser();
